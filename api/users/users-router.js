@@ -36,8 +36,12 @@ router.put('/:id', validateUserId, validateUser, async (req, res, next) => {
   // this needs a middleware to verify user id
   // and another middleware to check that the request body is valid
   try { 
-    const updatedUser = await Users.update(req.params.id);
-    res.json(updatedUser);
+    const updatedUser = await Users.update(req.params.id, req.body);
+    if(updatedUser) {
+      res.json({ id: parseInt(req.params.id), name: req.body.name });
+    } else {
+       res.status(500).json({ message: "Update Failed" })
+    }
   } catch(err) { next(err) }
 });
 
@@ -45,9 +49,12 @@ router.delete('/:id', validateUserId, async (req, res, next) => {
   // RETURN THE FRESHLY DELETED USER OBJECT
   // this needs a middleware to verify user id
   try { 
-    const deleted = await Users.remove(req.params.id);
-    console.log(deleted);
-    res.json(deleted);
+    const deleted = await Users.remove(req.userAtId.id);
+    if(deleted) {
+      res.json(req.userAtId);
+    } else {
+      res.status(500).json({ message: "delete failed" })
+    }
   } catch(err) { next(err) }
 });
 
@@ -55,8 +62,12 @@ router.get('/:id/posts', validateUserId, async (req, res, next) => {
   // RETURN THE ARRAY OF USER POSTS
   // this needs a middleware to verify user id
   try { 
-    const deleted = await Posts.getById(req.params.id);
-    res.json(deleted);
+    const postsAtId = await Users.getUserPosts(req.userAtId.id)
+    if(postsAtId) {
+      res.json(postsAtId);
+    } else {
+      res.status(500).json({ message: "Couldn't get posts" })
+    }
   } catch(err) { next(err) }
 });
 
@@ -64,9 +75,17 @@ router.post('/:id/posts', validateUserId, validatePost, async (req, res, next) =
   // RETURN THE NEWLY CREATED USER POST
   // this needs a middleware to verify user id
   // and another middleware to check that the request body is valid
+  const postObj = {
+    user_id: req.params.id,
+    text: req.body.text
+  }
   try {
-    const newPostAtId = await Posts.insert(req.body);
-    res.status(201).json(newPostAtId);
+    const newPostAtId = await Posts.insert(postObj);
+    if(newPostAtId) {
+      res.status(201).json(newPostAtId);
+    } else { 
+      res.status(500).json({ message: "Couldn't add post" })
+    }
   } catch(err) { next(err) }
 });
 
